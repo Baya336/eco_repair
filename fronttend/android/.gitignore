@@ -1,0 +1,22 @@
+
+# Fichiers Gradle
+/.gradle
+/captures/
+.gradle/
+
+# Autoriser les fichiers nécessaires au lancement Android
+!gradle-wrapper.jar
+!/gradlew
+!/gradlew.bat
+
+# Configuration locale à ne pas publier
+/local.properties
+
+# Fichiers générés
+GeneratedPluginRegistrant.java
+.cxx/
+
+# Ne jamais publier les clés de signature Android
+key.properties
+**/*.keystore
+**/*.jks
