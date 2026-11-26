@@ -1,41 +1,37 @@
 
 import os
-import smtplib
-
-from email.message import EmailMessage
+import requests
 from dotenv import load_dotenv
 
-
-# Charger les variables du fichier .env
 load_dotenv()
 
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-
-SMTP_PORT = 465
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL")
+BREVO_SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "RE-TECH 360")
 
 
 def send_password_reset_code(to_email: str, code: str):
-    """
-    Envoie un code de récupération du mot de passe
-    à l'adresse e-mail de l'utilisateur.
-    """
+    """Envoie un code de récupération via l'API Brevo."""
 
-    if not SMTP_EMAIL or not SMTP_PASSWORD:
-        raise RuntimeError(
-            "La configuration Gmail est incomplète dans le fichier .env."
-        )
+    if not BREVO_API_KEY or not BREVO_SENDER_EMAIL:
+        raise RuntimeError("La configuration Brevo est incomplète dans le fichier .env.")
 
-    message = EmailMessage()
+    url = "https://api.brevo.com/v3/smtp/email"
 
-    message["Subject"] = "RE-TECH 360 - Code de récupération"
-    message["From"] = SMTP_EMAIL
-    message["To"] = to_email
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json",
+    }
 
-    message.set_content(
-        f"""
-Bonjour,
+    payload = {
+        "sender": {
+            "name": BREVO_SENDER_NAME,
+            "email": BREVO_SENDER_EMAIL,
+        },
+        "to": [{"email": to_email}],
+        "subject": "RE-TECH 360 - Code de récupération",
+        "textContent": f"""Bonjour,
 
 Tu as demandé à réinitialiser ton mot de passe RE-TECH 360.
 
@@ -48,14 +44,17 @@ Ce code est valable pendant 10 minutes et ne peut être utilisé qu'une seule fo
 Si tu n'es pas à l'origine de cette demande, ignore cet e-mail.
 
 L'équipe RE-TECH 360
-"""
+""",
+    }
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=payload,
+        timeout=20,
     )
 
-    # Connexion sécurisée à Gmail et envoi du message
-    with smtplib.SMTP_SSL(
-        SMTP_SERVER,
-        SMTP_PORT,
-        timeout=20
-    ) as server:
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.send_message(message)
+    if not response.ok:
+        raise RuntimeError(
+            f"Erreur Brevo ({response.status_code}): {response.text}"
+        )
